@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Email Generate</title>
+</head>
+
+<body>
+    <style>
+        body {
+            font-family: sans-serif;
+        }
+
+        .button {
+            display: inline-block;
+            padding: 10px;
+            background: #ccc;
+            cursor: pointer;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+
+        .button:hover {
+            background: #ddd;
+        }
+
+        .blue-btn {
+            outline: none !important;
+            font-size: 1em;
+            color: white;
+            background: #2196F3;
+            border: #1565C0;
+            padding: 8px 27px 9px 28px;
+            margin: 0 8px 0px 8px;
+        }
+
+        .blue-btn:hover {
+            background: #1565C0;
+        }
+
+        div#error-msg {
+            color: red;
+        }
+
+        button:disabled,
+        button[disabled] {
+            border: 1px solid #999999;
+            background-color: #cccccc;
+            color: #666666;
+        }
+
+        button:disabled:hover,
+        button[disabled]:hover {
+            border: 1px solid #999999;
+            background-color: #cccccc;
+            color: #666666;
+        }
+
+        input {
+            width: 100%;
+            font-size: .9em;
+            padding: .5em;
+            margin-top: 0.2rem;
+        }
+
+        div#login {
+            position: relative;
+            left: 0;
+            margin-bottom: 1rem;
+        }
+
+        div#login label {
+            width: 37%;
+        }
+
+        div#error-msg {
+            margin-top: 0.5rem;
+        }
+
+        div#login {
+            display: grid;
+            justify-content: center;
+        }
+
+        .basicDetails {
+            display: block;
+            position: relative;
+            width: 500px;
+            margin-top: 0.5rem;
+            flex: none;
+            justify-content: center !important;
+        }
+
+        div#list-2 {
+            display: grid;
+            justify-content: center;
+        }
+
+        .starting {
+            display: flex;
+            justify-content: center;
+            margin-top: 1rem;
+        }
+
+        .buttom {
+            margin-top: 0.5rem;
+            display: grid;
+            justify-content: center;
+        }
+
+        button#run_btn {
+            display: block;
+        }
+
+        div#Process_msg {
+            color: blueviolet;
+        }
+
+        div#status_header {
+            display: flex;
+            justify-content: center;
+        }
+
+        .basicDetails {
+            display: block;
+            position: relative;
+            width: 500px;
+            margin-top: 0.5rem;
+            flex: none;
+            justify-content: center !important;
+        }
+
+        div#login {
+            display: grid;
+            justify-content: center;
+        }
+    </style>
+    <div id="list">
+        <div id="login">
+            <div class="basicDetails" id="sheetLink-field">
+                <label for="sheet_link">Sheet Link</label>
+                <input type="text" id="sheet_link">
+            </div>
+            <div class="basicDetails" id="scriptLink-field">
+                <label for="script_link">Script Link</label>
+                <input type="text" id="script_link">
+            </div>
+            <div class="basicDetails" id="port-field">
+                <label for="port">Port</label>
+                <input type="text" id="port">
+            </div>
+            <div class="basicDetails" id="id-field">
+                <label for="browser_id">Browser ID</label>
+                <input type="text" id="browser_id">
+            </div>
+        </div>
+        <div class="starting">
+            <button class="button blue-btn" id="startYahoo" onclick="startYahoo()">Start Yahoo</button>
+            <button class="button blue-btn" id="startGoogle" onclick="startGoogle()">Start Google</button>
+        </div>
+        <div id="list-2">
+            <br>
+            <div id="status_header" style="display:none"> <b>Status </b></div>
+            <div class="buttom" id="Notification-msg" style="display:none">
+            </div>
+            <br>
+            <div class="buttom" id="Process_msg" style="display:none">
+            </div>
+            <div class="buttom" id="error-msg" style="display:none">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        window.$ = window.jQuery = require('./jquery.min.js');
+
+        $(document).ready(function () {
+            if (localStorage.getItem("sheetLink")) {
+                $("#sheet_link").val(localStorage.getItem("sheetLink"));
+            }
+            if (localStorage.getItem("scriptLink")) {
+                $("#script_link").val(localStorage.getItem("scriptLink"));
+            }
+            if (localStorage.getItem("port")) {
+                $("#port").val(localStorage.getItem("port"));
+            }
+            if (localStorage.getItem("browserId")) {
+                $("#browser_id").val(localStorage.getItem("browserId"));
+            }
+        });
+        const ipc = require('electron').ipcRenderer;
+
+        function startYahoo() {
+            localStorage.setItem("sheetLink", $("#sheet_link").val());
+            localStorage.setItem("scriptLink", $("#script_link").val());
+            localStorage.setItem("port", $("#port").val());
+            localStorage.setItem("browserId", $("#browser_id").val());
+            $("#error-msg").hide();
+            $("#startYahoo").text("Running..")
+            $("#startYahoo").attr("disabled", true);
+            $("#status_header").show();
+            $("#startGoogle").attr("disabled", true);
+
+            ipc.send('Start_Yahoo', { sheetLink: $("#sheet_link").val(), scriptLink: $("#script_link").val(), port: $("#port").val(), id: $("#browser_id").val(), sheet: "YAHOO" });
+
+            ipc.on('process', (event, result) => {
+                console.log(result)
+                var htmlJson = '<div><table id="table">'
+                for (var key in result) {
+                    if (key != "email" && key != "password" && key != "phone") {
+                        htmlJson += `<tr><td>${key}</td><td><b>:</b></td><td>${result[key]}</td></tr>`
+                    }
+                }
+                htmlJson += '</table></div>'
+                $("#Process_msg").show();
+                $("#Process_msg").html(htmlJson)
+            });
+
+            ipc.on('notification', (event, result) => {
+                if (result.indexOf('Empty') > -1 || result == 'Done') {
+                    $("#startYahoo").text("Start Yahoo")
+                    $("#startYahoo").attr("disabled", false);
+                    $("#startGoogle").attr("disabled", false);
+                    $("#Notification-msg").show();
+                    $("#Notification-msg").html(`<div>${result}</div>`)
+                    $("#Process_msg").hide();
+                } else {
+                    $("#Notification-msg").show();
+                    $("#Notification-msg").html(`<div>${result}</div>`)
+                    $("#startYahoo").text("Running..")
+                    $("#startYahoo").attr("disabled", true);
+                }
+            });
+
+            ipc.on('error', (event, result) => {
+                $("#error-msg").show();
+                $("#Notification-msg").hide();
+                $("#error-msg").html(`<div>Error : ${result}</div>`);
+                $("#startYahoo").text("Start Yahoo")
+                $("#startYahoo").attr("disabled", false);
+                $("#startGoogle").attr("disabled", false);
+            });
+
+            ipc.on('retry', (event, result) => {
+                if (result = "GOOGLE") {
+                    startGoogle()
+                } else {
+                    startYahoo()
+                }
+            });
+
+        }
+        function startGoogle() {
+            localStorage.setItem("sheetLink", $("#sheet_link").val());
+            localStorage.setItem("scriptLink", $("#script_link").val());
+            localStorage.setItem("port", $("#port").val());
+            localStorage.setItem("browserId", $("#browser_id").val());
+            $("#error-msg").hide();
+            ipc.send('Start_Google', { sheetLink: $("#sheet_link").val(), scriptLink: $("#script_link").val(), port: $("#port").val(), id: $("#browser_id").val(), sheet: "GOOGLE" });
+            $("#startGoogle").text("Running..")
+            $("#startGoogle").attr("disabled", true);
+            $("#startYahoo").attr("disabled", true);
+
+            $("#status_header").show();
+
+            ipc.on('process', (event, result) => {
+                console.log(result)
+                var htmlJson = '<div><table id="table">'
+                for (var key in result) {
+                    if (key != "email" && key != "password" && key != "phone") {
+                        htmlJson += `<tr><td>${key}</td><td><b>:</b></td><td>${result[key]}</td></tr>`
+                    }
+                }
+                htmlJson += '</table></div>'
+                $("#Process_msg").show();
+                $("#Process_msg").html(htmlJson)
+            });
+
+            ipc.on('notification', (event, result) => {
+                if (result.indexOf('Empty') > -1 || result == 'Done' || result == 'Close') {
+                    $("#startGoogle").text("Start Google")
+                    $("#startGoogle").attr("disabled", false);
+                    $("#startYahoo").attr("disabled", false);
+                    $("#Notification-msg").show();
+                    $("#Notification-msg").html(`<div>${result}</div>`)
+                    $("#Process_msg").hide();
+                } else {
+                    $("#Notification-msg").show();
+                    $("#Notification-msg").html(`<div>${result}</div>`)
+                    $("#startGoogle").text("Running..")
+                    $("#startGoogle").attr("disabled", true);
+                }
+            });
+
+            ipc.on('error', (event, result) => {
+                $("#error-msg").show();
+                $("#Notification-msg").hide();
+                $("#error-msg").html(`<div>Error : ${result}</div>`);
+                $("#startGoogle").text("Start Google")
+                $("#startGoogle").attr("disabled", false);
+                $("#startYahoo").attr("disabled", false);
+            });
+
+            ipc.on('retry', (event, result) => {
+                if (result = "GOOGLE") {
+                    startGoogle()
+                } else {
+                    startYahoo()
+                }
+            });
+        }
+    </script>
+
+    <!-- You can also require other files to run in this process -->
+    <script src="./renderer.js"></script>
+</body>
+
+</html>
